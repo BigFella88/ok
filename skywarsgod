@@ -1,0 +1,51 @@
+-- Gui to Lua
+-- Version: 3.2
+
+-- Instances:
+
+local Whitelist = Instance.new("ScreenGui")
+local main = Instance.new("Frame")
+local Submit = Instance.new("TextButton")
+local Input = Instance.new("TextBox")
+
+--Properties:
+
+Whitelist.Name = "Whitelist"
+Whitelist.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+main.Name = "main"
+main.Parent = Whitelist
+main.BackgroundColor3 = Color3.fromRGB(83, 84, 84)
+main.Position = UDim2.new(0.381566793, 0, 0.293478251, 0)
+main.Size = UDim2.new(0, 291, 0, 154)
+
+Submit.Name = "Submit"
+Submit.Parent = Whitelist
+Submit.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+Submit.BackgroundTransparency = 0.550
+Submit.Position = UDim2.new(0.381566823, 0, 0.45869565, 0)
+Submit.Size = UDim2.new(0, 290, 171, 0)
+Submit.Font = Enum.Font.JosefinSans
+Submit.Text = "Submit"
+Submit.TextColor3 = Color3.fromRGB(0, 0, 0)
+Submit.TextSize = 35.000
+Submit.TextWrapped = true
+Submit.MouseButton1Down:connect(function()
+	if Input.Text == "Bigfella" then
+		main.Visible = false
+		Input.Visible = false
+		Submit.Visible = false
+		
+		loadstring(game:HttpGet('https://raw.githubusercontent.com/BigFella88/script/main/source'))()
+	end
+end)
+
+Input.Name = "Input"
+Input.Parent = Whitelist
+Input.BackgroundColor3 = Color3.fromRGB(157, 159, 159)
+Input.Position = UDim2.new(0.381566793, 0, 0.293478251, 0)
+Input.Size = UDim2.new(0, 291, 0, 76)
+Input.Font = Enum.Font.SourceSans
+Input.Text = ""
+Input.TextColor3 = Color3.fromRGB(0, 0, 0)
+Input.TextSize = 26.000
