@@ -14,7 +14,7 @@ local TextButton_4 = Instance.new("TextButton")
 
 --Properties:
 
-ScreenGui.Parent = game.
+ScreenGui.Parent = game.CoreGui
 
 main.Name = "main"
 main.Parent = ScreenGui
