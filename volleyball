@@ -1,153 +1,19 @@
--- Services and character setup
 local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoid = character:WaitForChild("Humanoid")
-local rootPart = character:WaitForChild("HumanoidRootPart")
 
--- Configuration
-local defaultTilt = math.rad(6.00)     -- Starting tilt (6 degrees)
-local minTiltDegrees = 0               -- Minimum tilt in degrees
-local maxTiltDegrees = 20              -- Maximum tilt in degrees
-local tiltAmount = defaultTilt         -- Dynamic tilt amount (updated by slider)
-local minTilt = math.rad(-5.40)        -- Minimum tilt (adjusted dynamically)
-local smoothingFactor = 55             -- Speed of tilt interpolation
-
--- Variables
-local isTilting = false
-local currentTilt = 0
-local smoothedTilt = 0
-local scriptEnabled = false            -- Start disabled until key is entered
-local keyCorrect = false               -- Track if key is correct
-
--- Create Tilt Control UI
 local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = player:WaitForChild("PlayerGui")
 screenGui.Name = "TiltControlGui"
 
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 250, 0, 200)
-frame.Position = UDim2.new(0.5, -125, 1, 0) -- Off-screen bottom initially
-frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-frame.BorderSizePixel = 0
-local gradient = Instance.new("UIGradient")
-gradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 20, 20)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(50, 50, 100))
-})
-gradient.Rotation = 45
-gradient.Parent = frame
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 10)
-corner.Parent = frame
-frame.Parent = screenGui
+local keyCorrect = false
 
-local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, 0, 0, 40)
-titleLabel.Position = UDim2.new(0, 0, 0, 0)
-titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "TILT CONTROL"
-titleLabel.TextColor3 = Color3.fromRGB(150, 150, 255)
-titleLabel.Font = Enum.Font.SciFi
-titleLabel.TextScaled = true
-titleLabel.Parent = frame
-
-local sliderBackground = Instance.new("Frame")
-sliderBackground.Size = UDim2.new(0.85, 0, 0, 25)
-sliderBackground.Position = UDim2.new(0.075, 0, 0, 70)
-sliderBackground.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-local sliderGradient = Instance.new("UIGradient")
-sliderGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 80, 120)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 120, 180))
-})
-sliderGradient.Parent = sliderBackground
-local sliderCorner = Instance.new("UICorner")
-sliderCorner.CornerRadius = UDim.new(0, 8)
-sliderCorner.Parent = sliderBackground
-local sliderGlow = Instance.new("UIStroke")
-sliderGlow.Thickness = 1.5
-sliderGlow.Color = Color3.fromRGB(150, 150, 255)
-sliderGlow.Transparency = 0.7
-sliderGlow.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-sliderGlow.Parent = sliderBackground
-sliderBackground.Parent = frame
-
-local sliderKnob = Instance.new("Frame")
-sliderKnob.Size = UDim2.new(0, 30, 0, 30)
-sliderKnob.BackgroundColor3 = Color3.fromRGB(180, 180, 255)
-sliderKnob.BorderSizePixel = 0
-local knobCorner = Instance.new("UICorner")
-knobCorner.CornerRadius = UDim.new(0, 15)
-knobCorner.Parent = sliderKnob
-local glow = Instance.new("UIStroke")
-glow.Thickness = 2
-glow.Color = Color3.fromRGB(200, 200, 255)
-glow.Transparency = 0.5
-glow.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-glow.Parent = sliderKnob
-sliderKnob.Parent = sliderBackground
-
-local tiltValueLabel = Instance.new("TextLabel")
-tiltValueLabel.Size = UDim2.new(0.8, 0, 0, 30)
-tiltValueLabel.Position = UDim2.new(0.1, 0, 0, 110)
-tiltValueLabel.BackgroundTransparency = 1
-tiltValueLabel.Text = "Tilt: 6°"
-tiltValueLabel.TextColor3 = Color3.fromRGB(200, 200, 255)
-tiltValueLabel.Font = Enum.Font.GothamBold
-tiltValueLabel.TextScaled = true
-tiltValueLabel.Parent = frame
-
-local watermark = Instance.new("TextLabel")
-watermark.Size = UDim2.new(1, 0, 0, 20)
-watermark.Position = UDim2.new(0, 0, 1, -25)
-watermark.BackgroundTransparency = 1
-watermark.Text = "Created by EliteLyez"
-watermark.TextColor3 = Color3.fromRGB(100, 100, 200)
-watermark.Font = Enum.Font.Gotham
-watermark.TextSize = 14
-watermark.TextTransparency = 0.3
-watermark.Parent = frame
-
-local toggleScriptButton = Instance.new("TextButton")
-toggleScriptButton.Size = UDim2.new(0.3, 0, 0, 30)
-toggleScriptButton.Position = UDim2.new(0.35, 0, 0, 150)
-toggleScriptButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-toggleScriptButton.Text = "ON"
-toggleScriptButton.TextColor3 = Color3.fromRGB(150, 255, 150)
-toggleScriptButton.Font = Enum.Font.GothamBold
-toggleScriptButton.TextScaled = true
-local toggleCorner = Instance.new("UICorner")
-toggleCorner.CornerRadius = UDim.new(0, 5)
-toggleCorner.Parent = toggleScriptButton
-toggleScriptButton.Parent = frame
-
-local toggleButton = Instance.new("TextButton")
-toggleButton.Size = UDim2.new(0, 60, 0, 60)
-toggleButton.Position = UDim2.new(0, 10, 0, 10)
-toggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-toggleButton.Text = "TILT"
-toggleButton.TextColor3 = Color3.fromRGB(150, 150, 255)
-toggleButton.Font = Enum.Font.SciFi
-toggleButton.TextScaled = true
-local buttonCorner = Instance.new("UICorner")
-buttonCorner.CornerRadius = UDim.new(0, 10)
-buttonCorner.Parent = toggleButton
-local buttonGradient = Instance.new("UIGradient")
-buttonGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 30, 30)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(50, 50, 70))
-})
-buttonGradient.Parent = toggleButton
-toggleButton.Parent = screenGui
-
--- Create Key System UI
+-- Key System UI
 local keyFrame = Instance.new("Frame")
 keyFrame.Size = UDim2.new(0, 300, 0, 150)
-keyFrame.Position = UDim2.new(0.5, -150, 0.5, -75) -- Centered initially
+keyFrame.Position = UDim2.new(0.5, -150, 0.5, -75)
 keyFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 keyFrame.BorderSizePixel = 0
 local keyGradient = Instance.new("UIGradient")
@@ -161,7 +27,7 @@ local keyCorner = Instance.new("UICorner")
 keyCorner.CornerRadius = UDim.new(0, 10)
 keyCorner.Parent = keyFrame
 keyFrame.Parent = screenGui
-keyFrame.Visible = true -- Pop up on execution
+keyFrame.Visible = true
 
 local keyTitle = Instance.new("TextLabel")
 keyTitle.Size = UDim2.new(1, 0, 0, 40)
@@ -199,7 +65,7 @@ submitCorner.CornerRadius = UDim.new(0, 5)
 submitCorner.Parent = submitButton
 submitButton.Parent = keyFrame
 
--- Make Key UI Draggable
+-- Draggable Key UI
 local draggingKey = false
 local dragInput
 local dragStart
@@ -227,53 +93,173 @@ keyFrame.InputChanged:Connect(function(input)
     end
 end)
 
--- Key System Logic
-submitButton.MouseButton1Click:Connect(function()
-    local enteredKey = keyInput.Text:lower()
-    if enteredKey == "volleyballontop" then
-        keyCorrect = true
-        keyFrame.Visible = false -- Hide UI after correct key
-        scriptEnabled = true     -- Enable tilt script
-    else
-        keyInput.Text = "Wrong! Try again."
-        wait(1)
-        keyInput.Text = ""
+-- Function to Start Tilt Script After Key Verification
+local function startTiltScript()
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoid = character:WaitForChild("Humanoid")
+    local rootPart = character:WaitForChild("HumanoidRootPart")
+
+    local defaultTilt = math.rad(6.00)
+    local minTiltDegrees = 0
+    local maxTiltDegrees = 20
+    local tiltAmount = defaultTilt
+    local minTilt = math.rad(-5.40)
+    local smoothingFactor = 55
+
+    local isTilting = false
+    local currentTilt = 0
+    local smoothedTilt = 0
+    local scriptEnabled = true
+
+    -- Tilt Control UI
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 250, 0, 200)
+    frame.Position = UDim2.new(0.5, -125, 1, 0)
+    frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    frame.BorderSizePixel = 0
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 20, 20)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(50, 50, 100))
+    })
+    gradient.Rotation = 45
+    gradient.Parent = frame
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 10)
+    corner.Parent = frame
+    frame.Parent = screenGui
+
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(1, 0, 0, 40)
+    titleLabel.Position = UDim2.new(0, 0, 0, 0)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = "TILT CONTROL"
+    titleLabel.TextColor3 = Color3.fromRGB(150, 150, 255)
+    titleLabel.Font = Enum.Font.SciFi
+    titleLabel.TextScaled = true
+    titleLabel.Parent = frame
+
+    local sliderBackground = Instance.new("Frame")
+    sliderBackground.Size = UDim2.new(0.85, 0, 0, 25)
+    sliderBackground.Position = UDim2.new(0.075, 0, 0, 70)
+    sliderBackground.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    local sliderGradient = Instance.new("UIGradient")
+    sliderGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 80, 120)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 120, 180))
+    })
+    sliderGradient.Parent = sliderBackground
+    local sliderCorner = Instance.new("UICorner")
+    sliderCorner.CornerRadius = UDim.new(0, 8)
+    sliderCorner.Parent = sliderBackground
+    local sliderGlow = Instance.new("UIStroke")
+    sliderGlow.Thickness = 1.5
+    sliderGlow.Color = Color3.fromRGB(150, 150, 255)
+    sliderGlow.Transparency = 0.7
+    sliderGlow.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    sliderGlow.Parent = sliderBackground
+    sliderBackground.Parent = frame
+
+    local sliderKnob = Instance.new("Frame")
+    sliderKnob.Size = UDim2.new(0, 30, 0, 30)
+    sliderKnob.BackgroundColor3 = Color3.fromRGB(180, 180, 255)
+    sliderKnob.BorderSizePixel = 0
+    local knobCorner = Instance.new("UICorner")
+    knobCorner.CornerRadius = UDim.new(0, 15)
+    knobCorner.Parent = sliderKnob
+    local glow = Instance.new("UIStroke")
+    glow.Thickness = 2
+    glow.Color = Color3.fromRGB(200, 200, 255)
+    glow.Transparency = 0.5
+    glow.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    glow.Parent = sliderKnob
+    sliderKnob.Parent = sliderBackground
+
+    local tiltValueLabel = Instance.new("TextLabel")
+    tiltValueLabel.Size = UDim2.new(0.8, 0, 0, 30)
+    tiltValueLabel.Position = UDim2.new(0.1, 0, 0, 110)
+    tiltValueLabel.BackgroundTransparency = 1
+    tiltValueLabel.Text = "Tilt: 6°"
+    tiltValueLabel.TextColor3 = Color3.fromRGB(200, 200, 255)
+    tiltValueLabel.Font = Enum.Font.GothamBold
+    tiltValueLabel.TextScaled = true
+    tiltValueLabel.Parent = frame
+
+    local watermark = Instance.new("TextLabel")
+    watermark.Size = UDim2.new(1, 0, 0, 20)
+    watermark.Position = UDim2.new(0, 0, 1, -25)
+    watermark.BackgroundTransparency = 1
+    watermark.Text = "Created by EliteLyez"
+    watermark.TextColor3 = Color3.fromRGB(100, 100, 200)
+    watermark.Font = Enum.Font.Gotham
+    watermark.TextSize = 14
+    watermark.TextTransparency = 0.3
+    watermark.Parent = frame
+
+    local toggleScriptButton = Instance.new("TextButton")
+    toggleScriptButton.Size = UDim2.new(0.3, 0, 0, 30)
+    toggleScriptButton.Position = UDim2.new(0.35, 0, 0, 150)
+    toggleScriptButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    toggleScriptButton.Text = "ON"
+    toggleScriptButton.TextColor3 = Color3.fromRGB(150, 255, 150)
+    toggleScriptButton.Font = Enum.Font.GothamBold
+    toggleScriptButton.TextScaled = true
+    local toggleCorner = Instance.new("UICorner")
+    toggleCorner.CornerRadius = UDim.new(0, 5)
+    toggleCorner.Parent = toggleScriptButton
+    toggleScriptButton.Parent = frame
+
+    local toggleButton = Instance.new("TextButton")
+    toggleButton.Size = UDim2.new(0, 60, 0, 60)
+    toggleButton.Position = UDim2.new(0, 10, 0, 10)
+    toggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    toggleButton.Text = "TILT"
+    toggleButton.TextColor3 = Color3.fromRGB(150, 150, 255)
+    toggleButton.Font = Enum.Font.SciFi
+    toggleButton.TextScaled = true
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(0, 10)
+    buttonCorner.Parent = toggleButton
+    local buttonGradient = Instance.new("UIGradient")
+    buttonGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 30, 30)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(50, 50, 70))
+    })
+    buttonGradient.Parent = toggleButton
+    toggleButton.Parent = screenGui
+
+    -- Slider Functionality
+    local function updateTiltFromSlider(value)
+        local tiltDegrees = minTiltDegrees + (maxTiltDegrees - minTiltDegrees) * value
+        tiltAmount = math.rad(tiltDegrees)
+        minTilt = math.rad(-tiltDegrees * 0.9)
+        tiltValueLabel.Text = "Tilt: " .. math.floor(tiltDegrees + 0.5) .. "°"
     end
-end)
 
--- Slider functionality
-local function updateTiltFromSlider(value)
-    local tiltDegrees = minTiltDegrees + (maxTiltDegrees - minTiltDegrees) * value
-    tiltAmount = math.rad(tiltDegrees)
-    minTilt = math.rad(-tiltDegrees * 0.9)
-    tiltValueLabel.Text = "Tilt: " .. math.floor(tiltDegrees + 0.5) .. "°"
-end
-
-sliderBackground.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        local dragging = true
-        local mouse = player:GetMouse()
-        
-        local function updateSlider()
-            if dragging then
-                local relativeX = math.clamp((mouse.X - sliderBackground.AbsolutePosition.X) / sliderBackground.AbsoluteSize.X, 0, 1)
-                sliderKnob.Position = UDim2.new(relativeX, -15, 0, -2.5)
-                updateTiltFromSlider(relativeX)
+    sliderBackground.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            local dragging = true
+            local mouse = player:GetMouse()
+            
+            local function updateSlider()
+                if dragging then
+                    local relativeX = math.clamp((mouse.X - sliderBackground.AbsolutePosition.X) / sliderBackground.AbsoluteSize.X, 0, 1)
+                    sliderKnob.Position = UDim2.new(relativeX, -15, 0, -2.5)
+                    updateTiltFromSlider(relativeX)
+                end
             end
+            
+            UserInputService.InputChanged:Connect(updateSlider)
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
         end
-        
-        UserInputService.InputChanged:Connect(updateSlider)
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
+    end)
 
--- Toggle script enable/disable
-toggleScriptButton.MouseButton1Click:Connect(function()
-    if keyCorrect then
+    -- Toggle Script Enable/Disable
+    toggleScriptButton.MouseButton1Click:Connect(function()
         scriptEnabled = not scriptEnabled
         if scriptEnabled then
             toggleScriptButton.Text = "ON"
@@ -285,97 +271,110 @@ toggleScriptButton.MouseButton1Click:Connect(function()
             currentTilt = 0
             smoothedTilt = 0
         end
+    end)
+
+    -- Toggle UI Animation
+    local isVisible = false
+    local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local function toggleUI()
+        isVisible = not isVisible
+        if isVisible then
+            TweenService:Create(frame, tweenInfo, {Position = UDim2.new(0.5, -125, 0.5, -100)}):Play()
+        else
+            TweenService:Create(frame, tweenInfo, {Position = UDim2.new(0.5, -125, 1, 0)}):Play()
+        end
     end
-end)
 
--- Toggle UI with animation
-local isVisible = false
-local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-local function toggleUI()
-    isVisible = not isVisible
-    if isVisible then
-        TweenService:Create(frame, tweenInfo, {Position = UDim2.new(0.5, -125, 0.5, -100)}):Play()
-    else
-        TweenService:Create(frame, tweenInfo, {Position = UDim2.new(0.5, -125, 1, 0)}):Play()
-    end
-end
+    toggleButton.MouseButton1Click:Connect(toggleUI)
 
-toggleButton.MouseButton1Click:Connect(toggleUI)
+    -- Set Initial Slider Position
+    local initialValue = (6 - minTiltDegrees) / (maxTiltDegrees - minTiltDegrees)
+    sliderKnob.Position = UDim2.new(initialValue, -15, 0, -2.5)
+    updateTiltFromSlider(initialValue)
 
--- Set initial slider position (6 degrees)
-local initialValue = (6 - minTiltDegrees) / (maxTiltDegrees - minTiltDegrees)
-sliderKnob.Position = UDim2.new(initialValue, -15, 0, -2.5)
-updateTiltFromSlider(initialValue)
-
--- Tilt logic
-local function updateTilt()
-    if not scriptEnabled or not keyCorrect then return end -- Skip if disabled or key not entered
-    if humanoid:GetState() == Enum.HumanoidStateType.Physics or humanoid:GetState() == Enum.HumanoidStateType.Freefall then
-        if isTilting then
-            currentTilt = -tiltAmount
+    -- Tilt Logic
+    local function updateTilt()
+        if not scriptEnabled then return end
+        if humanoid:GetState() == Enum.HumanoidStateType.Physics or humanoid:GetState() == Enum.HumanoidStateType.Freefall then
+            if isTilting then
+                currentTilt = -tiltAmount
+            else
+                currentTilt = 0
+            end
+            currentTilt = math.max(currentTilt, minTilt)
         else
             currentTilt = 0
         end
-        currentTilt = math.max(currentTilt, minTilt)
-    else
-        currentTilt = 0
     end
-end
 
-local function applyTilt(deltaTime)
-    if not scriptEnabled or not keyCorrect then return end -- Skip if disabled or key not entered
-    smoothedTilt = smoothedTilt + (currentTilt - smoothedTilt) * math.clamp(deltaTime * smoothingFactor, 0, 1)
-    local position = rootPart.Position
-    local orientation = rootPart.CFrame - position
-    local tiltCFrame = CFrame.Angles(smoothedTilt, 0, 0)
-    rootPart.CFrame = CFrame.new(position) * orientation * tiltCFrame
-end
-
--- Handle keyboard input (PC)
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if not scriptEnabled or not keyCorrect then return end -- Skip if disabled or key not entered
-    if gameProcessed then return end
-    if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.W then
-        isTilting = true
+    local function applyTilt(deltaTime)
+        if not scriptEnabled then return end
+        smoothedTilt = smoothedTilt + (currentTilt - smoothedTilt) * math.clamp(deltaTime * smoothingFactor, 0, 1)
+        local position = rootPart.Position
+        local orientation = rootPart.CFrame - position
+        local tiltCFrame = CFrame.Angles(smoothedTilt, 0, 0)
+        rootPart.CFrame = CFrame.new(position) * orientation * tiltCFrame
     end
-end)
 
-UserInputService.InputEnded:Connect(function(input)
-    if not scriptEnabled or not keyCorrect then return end -- Skip if disabled or key not entered
-    if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.W then
-        isTilting = false
-    end
-end)
-
--- Handle thumbstick input (Mobile)
-UserInputService.InputChanged:Connect(function(input, gameProcessed)
-    if not scriptEnabled or not keyCorrect then return end -- Skip if disabled or key not entered
-    if input.UserInputType == Enum.UserInputType.Touch then
-        local thumbstickDelta = input.Delta
-        if thumbstickDelta.Y < -0.1 then
+    -- Input Handling
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if not scriptEnabled then return end
+        if gameProcessed then return end
+        if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.W then
             isTilting = true
-        else
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if not scriptEnabled then return end
+        if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.W then
             isTilting = false
         end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input, gameProcessed)
+        if not scriptEnabled then return end
+        if input.UserInputType == Enum.UserInputType.Touch then
+            local thumbstickDelta = input.Delta
+            if thumbstickDelta.Y < -0.1 then
+                isTilting = true
+            else
+                isTilting = false
+            end
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if not scriptEnabled then return end
+        if input.UserInputType == Enum.UserInputType.Touch then
+            isTilting = false
+        end
+    end)
+
+    -- Update Loop
+    RunService.Heartbeat:Connect(function(deltaTime)
+        updateTilt()
+        applyTilt(deltaTime)
+    end)
+
+    -- Character Respawn Handling
+    player.CharacterAdded:Connect(function(newCharacter)
+        character = newCharacter
+        humanoid = character:WaitForChild("Humanoid")
+        rootPart = character:WaitForChild("HumanoidRootPart")
+    end)
+end
+
+-- Key Verification
+submitButton.MouseButton1Click:Connect(function()
+    local enteredKey = keyInput.Text:lower()
+    if enteredKey == "volleyballontop" then
+        keyCorrect = true
+        keyFrame.Visible = false
+        startTiltScript() -- Start tilt script only after key is correct
+    else
+        keyInput.Text = "Wrong! Try again."
+        wait(1)
+        keyInput.Text = ""
     end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if not scriptEnabled or not keyCorrect then return end -- Skip if disabled or key not entered
-    if input.UserInputType == Enum.UserInputType.Touch then
-        isTilting = false
-    end
-end)
-
--- Update every frame
-RunService.Heartbeat:Connect(function(deltaTime)
-    updateTilt()
-    applyTilt(deltaTime)
-end)
-
--- Handle character respawn
-player.CharacterAdded:Connect(function(newCharacter)
-    character = newCharacter
-    humanoid = character:WaitForChild("Humanoid")
-    rootPart = character:WaitForChild("HumanoidRootPart")
 end)
